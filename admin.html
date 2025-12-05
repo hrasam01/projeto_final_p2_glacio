@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Luxo - Contato</title>
+    <title>Luxo - Admin</title>
     <link rel="shortcut icon" href="images/barco2.png" type="image/x-icon" />
     <link rel="stylesheet" href="css/default.css" />
     
@@ -30,7 +30,7 @@
           <li><a href="aluguel.html">Aluguel de iates</a></li>
           <li><a href="destinos.html">Destinos</a></li>
           <li><a href="tripulacao.html">Tripulação</a></li>
-          <li><a href="contato.html" class="accent">Contato</a></li>
+          <li><a href="contato.html">Contato</a></li>
         </ul>
       </nav>
     </header>
@@ -38,29 +38,30 @@
     <main>
       <div class="pagtitle">
         <div class="bgtitle"></div>
-        <h2>Entre em contato</h2>
+        <h2>Área Administrativa</h2>
       </div>
 
-      <form id="formContato">
+      <form id="formLogin" style="max-width: 400px; margin: 40px auto; padding: 20px;">
         <div class="entry">
-          <label for="nome">Nome</label>
-          <input type="text" id="nome" required />
+          <label for="emailAdmin">E-mail</label>
+          <input type="email" id="emailAdmin" required />
         </div>
 
         <div class="entry">
-          <label for="email">E-mail</label>
-          <input type="email" id="email" required />
+          <label for="senhaAdmin">Senha</label>
+          <input type="password" id="senhaAdmin" required />
         </div>
 
-        <div class="entry">
-          <label for="msg">Mensagem</label>
-          <textarea cols="40" rows="7" id="msg" required></textarea>
+        <div class="buttons" style="margin-top: 20px;">
+          <button type="submit" class="button">Entrar</button>
         </div>
+        
+        <p style="text-align: center; margin-top: 20px; font-size: 0.85em; color: #666;">
+          <strong>Credenciais de teste:</strong><br>
+          Email: admin@admin.com<br>
+          Senha: 1234
+        </p>
       </form>
-
-      <div class="buttons">
-        <button class="button" id="btnEnviar">Enviar</button>
-      </div>
     </main>
     </div>
 
@@ -69,38 +70,39 @@
     </footer>
 
     <script>
-      // Implementação da 1ª parte: Enviar Mensagem
+      // Implementação da 2ª parte: Validação de Usuário
       $(document).ready(function() {
         
-        $('#btnEnviar').click(function(e) {
+        $('#formLogin').submit(function(e) {
           e.preventDefault();
           
-          // Obter valores dos campos do formulário
-          var nome = $('#nome').val().trim();
-          var email = $('#email').val().trim();
-          var mensagemTexto = $('#msg').val().trim();
+          // Obter valores dos campos
+          var email = $('#emailAdmin').val().trim();
+          var senha = $('#senhaAdmin').val().trim();
           
           // Validação simples
-          if (nome === '' || email === '' || mensagemTexto === '') {
+          if (email === '' || senha === '') {
             alert('Por favor, preencha todos os campos!');
             return;
           }
           
-          // Criar objeto mensagem no formato solicitado
-          var mensagem = {
-            nome: nome,
+          // Criar objeto no formato solicitado
+          var objLoginSenha = {
             email: email,
-            mensagem: mensagemTexto
+            senha: senha
           };
           
-          // Enviar mensagem usando a função da API
-          inserirMensagem(mensagem);
+          // Validar usuário usando a função da API
+          var resultado = validarUsuario(objLoginSenha);
           
-          // Feedback para o usuário
-          alert('Mensagem enviada com sucesso!');
-          
-          // Limpar formulário
-          $('#formContato')[0].reset();
+          // Verificar resultado e redirecionar ou mostrar erro
+          if (resultado === true) {
+            // Login bem-sucedido, redirecionar para mensagens.html
+            window.location.href = 'mensagens.html';
+          } else {
+            // Login falhou
+            alert('E-mail e Senha inválidos');
+          }
         });
         
       });

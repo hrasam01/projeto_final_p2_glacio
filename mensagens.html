@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Luxo - Mensagens</title>
+    <link rel="shortcut icon" href="images/barco2.png" type="image/x-icon" />
+    <link rel="stylesheet" href="css/default.css" />
+    
+    <!-- Scripts necessários na ordem correta -->
+    <script src="js/jquery-3.6.4.min.js"></script>
+    <script src="js/api.js"></script>
+    
+    <style>
+      /* Estilos para a tabela de mensagens */
+      .container-mensagens {
+        max-width: 920px;
+        margin: 40px auto;
+        padding: 0 30px;
+      }
+      
+      .tabela-mensagens {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background-color: white;
+        table-layout: fixed;
+      }
+      
+      .tabela-mensagens th {
+        background-color: var(--darkblue);
+        color: white;
+        padding: 10px 8px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.9em;
+      }
+      
+      .tabela-mensagens td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #ddd;
+        font-size: 0.9em;
+        word-wrap: break-word;
+      }
+      
+      .tabela-mensagens tr:hover {
+        background-color: #f5f5f5;
+      }
+      
+      /* Larguras específicas das colunas */
+      .col-nome {
+        width: 15%;
+      }
+      
+      .col-email {
+        width: 20%;
+      }
+      
+      .col-mensagem {
+        width: 40%;
+      }
+      
+      .col-acoes {
+        width: 25%;
+        text-align: center;
+      }
+      
+      /* Classe para mensagens não visualizadas (em negrito) */
+      .nao-visualizada {
+        font-weight: bold;
+      }
+      
+      /* Classe para mensagens visualizadas (fonte normal) */
+      .visualizada {
+        font-weight: normal;
+      }
+      
+      .btn-acao {
+        padding: 5px 10px;
+        margin: 2px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.75em;
+        border-radius: 3px;
+        transition: 0.3s;
+        display: inline-block;
+      }
+      
+      .btn-visualizar {
+        background-color: #4CAF50;
+        color: white;
+      }
+      
+      .btn-visualizar:hover {
+        background-color: #45a049;
+      }
+      
+      .btn-excluir {
+        background-color: #f44336;
+        color: white;
+      }
+      
+      .btn-excluir:hover {
+        background-color: #da190b;
+      }
+      
+      .sem-mensagens {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+        font-style: italic;
+      }
+      
+      .info-total {
+        text-align: right;
+        margin-top: 10px;
+        font-size: 0.85em;
+        color: #666;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="page">
+    <header>
+      <div id="title">
+        <img src="images/barco1.png" alt="ícone de barco" />
+        <div class="headtitle">
+          <h1>Luxo</h1>
+          <h2>Aluguel de iates</h2>
+        </div>
+      </div>
+
+      <nav>
+        <ul class="navmenu">
+          <li><a href="index.html">Página inicial</a></li>
+          <li><a href="aluguel.html">Aluguel de iates</a></li>
+          <li><a href="destinos.html">Destinos</a></li>
+          <li><a href="tripulacao.html">Tripulação</a></li>
+          <li><a href="contato.html">Contato</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <div class="pagtitle">
+        <div class="bgtitle"></div>
+        <h2>Mensagens Recebidas</h2>
+      </div>
+
+      <div class="container-mensagens">
+        <div class="buttons" style="margin-bottom: 20px;">
+          <button class="button" id="btnAtualizar">Atualizar Mensagens</button>
+          <button class="button" style="background-color: #666;" id="btnSair">Sair</button>
+        </div>
+        
+        <div id="conteudoTabela">
+          <!-- A tabela será gerada dinamicamente aqui -->
+        </div>
+        
+        <div class="info-total" id="infoTotal"></div>
+      </div>
+    </main>
+    </div>
+
+    <footer>
+      <p>© 2023 por Luxo aluguel de iates</p>
+    </footer>
+
+    <script>
+  const STORAGE_KEY = 'mensagens_luxo';
+
+  $(document).ready(function () {
+    carregarMensagens();
+
+    $('#btnAtualizar').click(carregarMensagens);
+
+    $('#btnSair').click(function () {
+      window.location.href = 'index.html';
+    });
+  });
+
+  function carregarMensagens() {
+    var mensagensAPI = obterMensagens();
+    var mensagensLocal = obterMensagensLocal();
+
+    // mesclar API + localStorage preservando visualizada/excluida
+    var mensagens = processarMensagens(mensagensAPI, mensagensLocal);
+
+    salvarMensagensLocal(mensagens);
+
+    // filtrar excluídas antes de renderizar
+    var mensagensVisiveis = mensagens.filter(m => !m.excluida);
+
+    renderizarTabela(mensagensVisiveis);
+  }
+
+  function obterMensagensLocal() {
+    var dados = localStorage.getItem(STORAGE_KEY);
+    return dados ? JSON.parse(dados) : [];
+  }
+
+  function salvarMensagensLocal(mensagens) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(mensagens));
+  }
+
+  // mesclagem correta
+  function processarMensagens(api, local) {
+    var mapaLocal = {};
+    local.forEach(m => mapaLocal[m.id] = m);
+
+    var resultado = [];
+
+    // mensagens da API
+    api.forEach(msgAPI => {
+      if (mapaLocal[msgAPI.id]) {
+        // preserva flags locais
+        resultado.push({
+          id: msgAPI.id,
+          nome: msgAPI.nome,
+          email: msgAPI.email,
+          mensagem: msgAPI.mensagem,
+          visualizada: mapaLocal[msgAPI.id].visualizada || false,
+          excluida: mapaLocal[msgAPI.id].excluida || false
+        });
+        delete mapaLocal[msgAPI.id];
+      } else {
+        // mensagem nova
+        resultado.push({
+          id: msgAPI.id,
+          nome: msgAPI.nome,
+          email: msgAPI.email,
+          mensagem: msgAPI.mensagem,
+          visualizada: false,
+          excluida: false
+        });
+      }
+    });
+
+    // adiciona ao resultado qualquer mensagem local que não está mais na API
+    Object.values(mapaLocal).forEach(msg => resultado.push(msg));
+
+    return resultado;
+  }
+
+  function renderizarTabela(mensagens) {
+    if (mensagens.length === 0) {
+      $('#conteudoTabela').html('<div class="sem-mensagens">Nenhuma mensagem encontrada.</div>');
+      $('#infoTotal').html('Total: 0 mensagens | Não visualizadas: 0');
+      return;
+    }
+
+    var html = `
+      <table class="tabela-mensagens">
+        <thead>
+          <tr>
+            <th class="col-nome">Nome</th>
+            <th class="col-email">E-mail</th>
+            <th class="col-mensagem">Mensagem</th>
+            <th class="col-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    mensagens.forEach(msg => {
+      html += `
+        <tr class="${msg.visualizada ? 'visualizada' : 'nao-visualizada'}" data-id="${msg.id}">
+          <td>${msg.nome}</td>
+          <td>${msg.email}</td>
+          <td>${msg.mensagem}</td>
+          <td>
+            ${!msg.visualizada ? `<button class="btn-acao btn-visualizar" onclick="marcarComoVisualizada(${msg.id})">Visualizada</button>` : ''}
+            <button class="btn-acao btn-excluir" onclick="excluirMensagem(${msg.id})">Excluir</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    html += '</tbody></table>';
+
+    $('#conteudoTabela').html(html);
+
+    var naoVisualizadas = mensagens.filter(m => !m.visualizada).length;
+    $('#infoTotal').html(
+      'Total: ' + mensagens.length + ' mensagens | Não visualizadas: ' + naoVisualizadas
+    );
+  }
+
+  function marcarComoVisualizada(id) {
+    if (!confirm('Deseja marcar esta mensagem como visualizada?')) return;
+
+    var mensagens = obterMensagensLocal();
+
+    mensagens = mensagens.map(msg => {
+      if (msg.id == id) msg.visualizada = true;
+      return msg;
+    });
+
+    salvarMensagensLocal(mensagens);
+    carregarMensagens();
+  }
+
+  function excluirMensagem(id) {
+    if (!confirm('Tem certeza que deseja excluir esta mensagem?')) return;
+
+    var mensagens = obterMensagensLocal();
+
+    // Marca como excluída em vez de remover
+    mensagens = mensagens.map(msg => {
+      if (msg.id == id) msg.excluida = true;
+      return msg;
+    });
+
+    salvarMensagensLocal(mensagens);
+    carregarMensagens();
+  }
+</script>
+
+  </body>
+</html>
